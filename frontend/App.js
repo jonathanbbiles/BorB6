@@ -38,9 +38,9 @@ import {
 // If they are missing the app will still run but trading requests will fail.
 // For temporary testing we hardcode the credentials. Remove before committing
 // to production.
-const ALPACA_KEY = 'PKN4ICO3WECXSLDGXCHC';
+const ALPACA_KEY = 'AKP4CYCLABN0QHC7GVH4';
 const ALPACA_SECRET = 'PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca';
-const ALPACA_BASE_URL = 'https://paper-api.alpaca.markets/v2';
+const ALPACA_BASE_URL = 'https://api.alpaca.markets/v2';
 
 const HEADERS = {
   'APCA-API-KEY-ID': ALPACA_KEY,
