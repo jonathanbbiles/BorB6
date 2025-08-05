@@ -36,32 +36,17 @@ import {
 
 // API credentials are expected to be provided via environment variables.
 // If they are missing the app will still run but trading requests will fail.
-// For temporary testing we hardcode the credentials. Remove before committing
-// to production.
-const ALPACA_KEY = 'PKN4ICO3WECXSLDGXCHC';
-const ALPACA_SECRET = 'PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca';
-const ALPACA_BASE_URL = 'https://paper-api.alpaca.markets/v2';
-
-
-//EXPO_PUBLIC_BACKEND_URL=https://borb6.onrender.com
-//ALPACA_API_KEY=PKN4ICO3WECXSLDGXCHC
-//ALPACA_SECRET_KEY=PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca
-//ALPACA_BASE_URL=https://paper-api.alpaca.markets
-//ALPACA_DATA_URL=https://data.alpaca.markets/v1beta2
-
-
-
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const ALPACA_BASE_URL = `${BACKEND_URL}/alpaca`;
 
 
 const HEADERS = {
-  'APCA-API-KEY-ID': ALPACA_KEY,
-  'APCA-API-SECRET-KEY': ALPACA_SECRET,
   'Content-Type': 'application/json',
 };
 
 // Buffer the sell price to offset taker fees while keeping the profit target
 const FEE_BUFFER = 0.0025; // 0.25% taker fee
-const TARGET_PROFIT = 0.0005; // 0.05% desired profit
+const TARGET_PROFIT = 0.005; // 0.5% desired profit
 const TOTAL_MARKUP = FEE_BUFFER + TARGET_PROFIT;
 
 // Crypto orders require GTC time in force
@@ -461,12 +446,14 @@ export default function App() {
         return;
       }
 
+      const qty = Math.floor((notional / price) * 1e8) / 1e8;
       const order = {
         symbol,
-        notional,
+        qty,
         side: 'buy',
-        type: 'market',
+        type: 'limit',
         time_in_force: CRYPTO_TIME_IN_FORCE,
+        limit_price: price,
       };
 
       const res = await fetch(`${ALPACA_BASE_URL}/orders`, {
@@ -484,9 +471,22 @@ export default function App() {
       }
 
       if (res.ok && result.id) {
-        logTradeAction('buy_success', symbol, { id: result.id, notional });
-        showNotification(`✅ Bought ${symbol} $${notional}`);
-        setTimeout(() => placeLimitSell(symbol), 5000);
+        let filled = result;
+        for (let i = 0; i < 20; i++) {
+          const check = await fetch(`${ALPACA_BASE_URL}/orders/${result.id}`, { headers: HEADERS });
+          const data = await check.json();
+          filled = data;
+          if (data.status === 'filled') break;
+          await sleep(3000);
+        }
+        if (filled.status === 'filled') {
+          logTradeAction('buy_success', symbol, { id: result.id, qty });
+          showNotification(`✅ Bought ${symbol} ${qty}`);
+          setTimeout(() => placeLimitSell(symbol), 5000);
+        } else {
+          logTradeAction('buy_fill_timeout', symbol, { id: result.id });
+          showNotification(`⌛ Buy Pending ${symbol}`);
+        }
       } else {
         logTradeAction('buy_failed', symbol, {
           status: res.status,
@@ -615,7 +615,7 @@ export default function App() {
     loadData();
     (async () => {
       try {
-        const res = await fetch('https://paper-api.alpaca.markets/v2/account', { headers: HEADERS });
+        const res = await fetch(`${ALPACA_BASE_URL}/account`, { headers: HEADERS });
         const account = await res.json();
         console.log('[ALPACA CONNECTED]', account.account_number, 'Equity:', account.equity);
         showNotification('✅ Connected to Alpaca');
