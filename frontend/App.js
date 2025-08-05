@@ -38,9 +38,20 @@ import {
 // If they are missing the app will still run but trading requests will fail.
 // For temporary testing we hardcode the credentials. Remove before committing
 // to production.
-const ALPACA_KEY = 'PKGY01ABISEXQJZX5L7M';
+const ALPACA_KEY = 'PKN4ICO3WECXSLDGXCHC';
 const ALPACA_SECRET = 'PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca';
 const ALPACA_BASE_URL = 'https://paper-api.alpaca.markets/v2';
+
+
+//EXPO_PUBLIC_BACKEND_URL=https://borb6.onrender.com
+//ALPACA_API_KEY=PKN4ICO3WECXSLDGXCHC
+//ALPACA_SECRET_KEY=PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca
+//ALPACA_BASE_URL=https://paper-api.alpaca.markets
+//ALPACA_DATA_URL=https://data.alpaca.markets/v1beta2
+
+
+
+
 
 const HEADERS = {
   'APCA-API-KEY-ID': ALPACA_KEY,
