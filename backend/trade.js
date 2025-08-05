@@ -4,12 +4,10 @@ const { getAccountInfo } = require('./account');
 
 const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
 const DATA_URL = process.env.ALPACA_DATA_URL;
-const API_KEY = process.env.ALPACA_API_KEY;
-const SECRET_KEY = process.env.ALPACA_SECRET_KEY;
 
-const HEADERS = {
-  'APCA-API-KEY-ID': API_KEY,
-  'APCA-API-SECRET-KEY': SECRET_KEY,
+const headers = {
+  'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
+  'APCA-API-SECRET-KEY': process.env.ALPACA_SECRET_KEY,
 };
 
 // Offsets taker fees when calculating profit target
@@ -33,7 +31,7 @@ function roundPrice(price) {
 async function getLatestPrice(symbol) {
   const res = await axios.get(
     `${DATA_URL}/crypto/latest/trades?symbols=${symbol}`,
-    { headers: HEADERS }
+    { headers }
   );
   const trade = res.data.trades && res.data.trades[symbol];
   if (!trade) throw new Error(`Price not available for ${symbol}`);
@@ -69,7 +67,7 @@ async function placeLimitBuyThenSell(symbol) {
       time_in_force: 'gtc',
       limit_price: price,
     },
-    { headers: HEADERS }
+    { headers }
   );
 
   const buyOrder = buyRes.data;
@@ -77,7 +75,7 @@ async function placeLimitBuyThenSell(symbol) {
   let filled = buyOrder;
   for (let i = 0; i < 20; i++) {
     const chk = await axios.get(`${ALPACA_BASE_URL}/v2/orders/${buyOrder.id}`, {
-      headers: HEADERS,
+      headers,
     });
     filled = chk.data;
     if (filled.status === 'filled') break;
@@ -105,7 +103,7 @@ async function placeLimitBuyThenSell(symbol) {
       time_in_force: 'gtc',
       limit_price: limitPrice,
     },
-    { headers: HEADERS }
+    { headers }
   );
 
   return { buy: filled, sell: sellRes.data };
