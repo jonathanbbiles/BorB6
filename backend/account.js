@@ -8,6 +8,10 @@ const headers = {
   'APCA-API-SECRET-KEY': process.env.ALPACA_SECRET_KEY,
 };
 
+// Debug credentials on startup (remove once verified)
+console.log('Alpaca BASE URL:', process.env.ALPACA_BASE_URL);
+console.log('API KEY starts with:', process.env.ALPACA_API_KEY?.slice(0, 5));
+
 async function getAccountInfo() {
   const res = await axios.get(`${ALPACA_BASE_URL}/v2/account`, { headers });
   const portfolioValue = parseFloat(res.data.portfolio_value);
