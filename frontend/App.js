@@ -425,90 +425,33 @@ export default function App() {
         headers: HEADERS,
       });
       const accountData = await accountRes.json();
-      const cash = parseFloat(accountData.cash || 0);
-      const cashWithdrawable = parseFloat(accountData.cash_withdrawable || 0);
+      const cash = parseFloat(accountData.non_marginable_buying_power || 0);
       const portfolioValue = parseFloat(accountData.portfolio_value || '0');
 
-      logTradeAction('cash_available', symbol, { cash, cash_withdrawable: cashWithdrawable });
+      logTradeAction('cash_available', symbol, { non_marginable_buying_power: cash });
 
-      const SAFETY_MARGIN = 1; // prevents over-request by $1 buffer
-      const SAFETY_FACTOR = 0.99; // extra buffer for price fluctuations
+      const SAFETY_MARGIN = 1;
+      const SAFETY_FACTOR = 0.99;
 
       const targetAllocation = portfolioValue * 0.1;
 
-      // Always choose the smaller of the 10% allocation, available cash
-      // minus the safety margin and withdrawable cash minus the safety margin
-      // to avoid requesting more funds than can actually be used.
       let allocation = Math.min(
         targetAllocation,
-        cash - SAFETY_MARGIN,
-        cashWithdrawable - SAFETY_MARGIN
-      );
+        cash - SAFETY_MARGIN
+      ) * SAFETY_FACTOR;
 
-      // Apply a small safety factor to account for price fluctuations
-      // between calculation and order placement.
-      allocation *= SAFETY_FACTOR;
-
-      // Final guard: never request more than the cash or withdrawable balances
-      if (allocation > cash) {
-        allocation = Math.floor(cash * 100) / 100;
-      }
-      if (allocation > cashWithdrawable) {
-        allocation = Math.floor(cashWithdrawable * 100) / 100;
-      }
-
-      // Ensure allocation is never negative
       if (allocation <= 0) {
         logTradeAction('allocation_skipped', symbol, {
-          reason: 'safety margin exceeded available cash',
-          cash,
+          reason: 'no usable non-marginable buying power',
+          non_marginable_buying_power: cash,
           targetAllocation,
           allocation,
         });
         return;
       }
 
-      // Calculate the final notional using the adjusted allocation and
-      // round down to two decimals to stay within available funds
-      const rawAllocation = allocation;
       let notional = Math.floor(allocation * 100) / 100;
 
-      // Confirm final allocation details
-      logTradeAction('allocation_check', symbol, {
-        cash,
-        targetAllocation,
-        rawAllocation,
-        finalNotional: notional,
-        safetyMargin: SAFETY_MARGIN,
-        safetyFactor: SAFETY_FACTOR,
-      });
-
-      logTradeAction('notional_final', symbol, { notional });
-
-      if (notional < 1) {
-        logTradeAction('skip_small_order', symbol, {
-          reason: 'insufficient cash',
-          targetAllocation,
-          allocation: rawAllocation,
-          cash,
-        });
-        return;
-      }
-
-      // Use Alpaca's notional parameter to cap the trade amount. Rounding
-      // to two decimals ensures we never exceed available cash even if the
-      // price moves slightly after this calculation.
-
-      // If our requested notional exceeds cash, fall back to using
-      // 100% of available cash (rounded down to two decimals).
-      if (notional > cash) {
-        notional = Math.floor(cash * 100) / 100;
-      }
-      if (notional > cashWithdrawable) {
-        notional = Math.floor(cashWithdrawable * 100) / 100;
-      }
-
-      // Ensure Alpaca minimum order amount of $1 is met after adjustment.
       if (notional < 1) {
         logTradeAction('skip_small_order', symbol, {
           reason: 'notional below alpaca minimum after adjustment',
