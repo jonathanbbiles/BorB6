@@ -1,8 +1,9 @@
+require('dotenv').config();
 const axios = require('axios');
 const { getAccountInfo } = require('./account');
 
-const ALPACA_BASE_URL = 'https://paper-api.alpaca.markets/v2';
-const DATA_URL = 'https://data.alpaca.markets/v1beta2';
+const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
+const DATA_URL = process.env.ALPACA_DATA_URL;
 const API_KEY = process.env.ALPACA_API_KEY;
 const SECRET_KEY = process.env.ALPACA_SECRET_KEY;
 
@@ -59,7 +60,7 @@ async function placeLimitBuyThenSell(symbol) {
   }
 
   const buyRes = await axios.post(
-    `${ALPACA_BASE_URL}/orders`,
+    `${ALPACA_BASE_URL}/v2/orders`,
     {
       symbol,
       qty,
@@ -75,7 +76,7 @@ async function placeLimitBuyThenSell(symbol) {
 
   let filled = buyOrder;
   for (let i = 0; i < 20; i++) {
-    const chk = await axios.get(`${ALPACA_BASE_URL}/orders/${buyOrder.id}`, {
+    const chk = await axios.get(`${ALPACA_BASE_URL}/v2/orders/${buyOrder.id}`, {
       headers: HEADERS,
     });
     filled = chk.data;
@@ -95,7 +96,7 @@ async function placeLimitBuyThenSell(symbol) {
   );
 
   const sellRes = await axios.post(
-    `${ALPACA_BASE_URL}/orders`,
+    `${ALPACA_BASE_URL}/v2/orders`,
     {
       symbol,
       qty: filled.filled_qty,

@@ -6,7 +6,7 @@ const { placeLimitBuyThenSell } = require('./trade');
 const app = express();
 app.use(express.json());
 
-const ALPACA_BASE_URL = 'https://paper-api.alpaca.markets/v2';
+const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
 const API_KEY = process.env.ALPACA_API_KEY;
 const SECRET_KEY = process.env.ALPACA_SECRET_KEY;
 
@@ -48,5 +48,7 @@ app.use('/alpaca', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
+  console.log('ALPACA_API_KEY:', API_KEY);
+  console.log('ALPACA_BASE_URL:', ALPACA_BASE_URL);
 });
 
