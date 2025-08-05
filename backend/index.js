@@ -7,12 +7,10 @@ const app = express();
 app.use(express.json());
 
 const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
-const API_KEY = process.env.ALPACA_API_KEY;
-const SECRET_KEY = process.env.ALPACA_SECRET_KEY;
 
-const HEADERS = {
-  'APCA-API-KEY-ID': API_KEY,
-  'APCA-API-SECRET-KEY': SECRET_KEY,
+const headers = {
+  'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
+  'APCA-API-SECRET-KEY': process.env.ALPACA_SECRET_KEY,
 };
 
 // Sequentially place a limit buy order followed by a delayed limit sell once filled
@@ -36,7 +34,7 @@ app.use('/alpaca', async (req, res) => {
       url,
       params: req.query,
       data: req.body,
-      headers: HEADERS,
+      headers,
     });
     res.status(response.status).json(response.data);
   } catch (err) {
@@ -48,7 +46,7 @@ app.use('/alpaca', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
-  console.log('ALPACA_API_KEY:', API_KEY);
-  console.log('ALPACA_BASE_URL:', ALPACA_BASE_URL);
+  console.log('Alpaca BASE URL:', process.env.ALPACA_BASE_URL);
+  console.log('Alpaca API KEY starts with:', process.env.ALPACA_API_KEY?.slice(0, 4));
 });
 
