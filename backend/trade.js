@@ -3,7 +3,6 @@ const axios = require('axios');
 const { getAccountInfo } = require('./account');
 
 const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
-const DATA_URL = process.env.ALPACA_DATA_URL;
 
 const headers = {
   'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
@@ -27,15 +26,37 @@ function roundPrice(price) {
   return parseFloat(Number(price).toFixed(2));
 }
 
-// Fetch latest trade price for a symbol
+const COINGECKO_IDS = {
+  BTCUSD: 'bitcoin',
+  ETHUSD: 'ethereum',
+  LTCUSD: 'litecoin',
+  SOLUSD: 'solana',
+  DOGEUSD: 'dogecoin',
+};
+
+// Fetch latest trade price for a symbol with Alpaca and CoinGecko fallback
 async function getLatestPrice(symbol) {
-  const res = await axios.get(
-    `${DATA_URL}/crypto/latest/trades?symbols=${symbol}`,
-    { headers }
-  );
-  const trade = res.data.trades && res.data.trades[symbol];
-  if (!trade) throw new Error(`Price not available for ${symbol}`);
-  return parseFloat(trade.p);
+  const url = `https://data.alpaca.markets/v1beta1/crypto/latest/trades?symbols=${symbol}`;
+  try {
+    const res = await axios.get(url, { headers });
+    const trade = res.data.trades && res.data.trades[symbol];
+    if (trade && trade.p) return parseFloat(trade.p);
+    throw new Error('No trade data');
+  } catch (err) {
+    console.error('Alpaca price fetch failed', err.response?.data || err.message);
+    const id = COINGECKO_IDS[symbol];
+    if (!id) throw new Error(`Price not available for ${symbol}`);
+    try {
+      const cgRes = await axios.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`
+      );
+      const price = cgRes.data[id]?.usd;
+      if (price) return parseFloat(price);
+    } catch (cgErr) {
+      console.error('CoinGecko price fetch failed', cgErr.response?.data || cgErr.message);
+    }
+    throw new Error(`Price not available for ${symbol}`);
+  }
 }
 
 // Limit buy using 10% of portfolio value then place a delayed limit sell with markup
@@ -56,6 +77,12 @@ async function placeLimitBuyThenSell(symbol) {
   if (qty <= 0) {
     throw new Error('Insufficient buying power for trade');
   }
+
+  console.log('[TRADE] BUY INITIATED', { symbol, qty, price });
+  console.log('[HEADERS]', {
+    'APCA-API-KEY-ID': process.env.ALPACA_API_KEY?.slice(0, 6),
+    BASE_URL: process.env.ALPACA_BASE_URL,
+  });
 
   const buyRes = await axios.post(
     `${ALPACA_BASE_URL}/v2/orders`,
