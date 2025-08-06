@@ -1,8 +1,9 @@
 require('dotenv').config();
 const axios = require('axios');
+const alpaca = require('./alpacaClient');
 const { getAccountInfo } = require('./account');
 
-const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
+const ALPACA_DATA_URL = process.env.ALPACA_DATA_URL || 'https://data.alpaca.markets/v1beta2';
 
 const headers = {
   'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
@@ -37,7 +38,7 @@ const COINGECKO_IDS = {
 
 // Fetch latest trade price for a symbol with Alpaca and CoinGecko fallback
 async function getLatestPrice(symbol) {
-  const url = `https://data.alpaca.markets/v1beta1/crypto/latest/trades?symbols=${symbol}`;
+  const url = `${ALPACA_DATA_URL}/crypto/trades/latest?symbols=${symbol}`;
   try {
     const res = await axios.get(url, { headers });
     const trade = res.data.trades && res.data.trades[symbol];
@@ -95,19 +96,13 @@ async function placeLimitBuyThenSell(symbol) {
   };
   console.log('[BUY ORDER]', JSON.stringify(orderData));
 
-  const buyRes = await axios.post(
-    `${ALPACA_BASE_URL}/v2/orders`,
-    orderData,
-    { headers }
-  );
+  const buyRes = await alpaca.post('/v2/orders', orderData);
 
   const buyOrder = buyRes.data;
 
   let filled = buyOrder;
   for (let i = 0; i < 20; i++) {
-    const chk = await axios.get(`${ALPACA_BASE_URL}/v2/orders/${buyOrder.id}`, {
-      headers,
-    });
+    const chk = await alpaca.get(`/v2/orders/${buyOrder.id}`);
     filled = chk.data;
     if (filled.status === 'filled') break;
     await sleep(3000);
@@ -134,11 +129,7 @@ async function placeLimitBuyThenSell(symbol) {
   };
   console.log('[SELL ORDER]', JSON.stringify(orderData));
 
-  const sellRes = await axios.post(
-    `${ALPACA_BASE_URL}/v2/orders`,
-    orderData,
-    { headers }
-  );
+  const sellRes = await alpaca.post('/v2/orders', orderData);
 
   return { buy: filled, sell: sellRes.data };
 }
