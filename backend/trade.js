@@ -7,6 +7,7 @@ const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
 const headers = {
   'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
   'APCA-API-SECRET-KEY': process.env.ALPACA_SECRET_KEY,
+  'Content-Type': 'application/json',
 };
 
 // Offsets taker fees when calculating profit target
@@ -84,16 +85,19 @@ async function placeLimitBuyThenSell(symbol) {
     BASE_URL: process.env.ALPACA_BASE_URL,
   });
 
+  let orderData = {
+    symbol: String(symbol),
+    qty: String(qty),
+    side: 'buy',
+    type: 'limit',
+    time_in_force: 'gtc',
+    limit_price: String(price),
+  };
+  console.log('[BUY ORDER]', JSON.stringify(orderData));
+
   const buyRes = await axios.post(
     `${ALPACA_BASE_URL}/v2/orders`,
-    {
-      symbol,
-      qty,
-      side: 'buy',
-      type: 'limit',
-      time_in_force: 'gtc',
-      limit_price: price,
-    },
+    orderData,
     { headers }
   );
 
@@ -120,16 +124,19 @@ async function placeLimitBuyThenSell(symbol) {
     parseFloat(filled.filled_avg_price) * (1 + TOTAL_MARKUP)
   );
 
+  orderData = {
+    symbol: String(symbol),
+    qty: String(filled.filled_qty),
+    side: 'sell',
+    type: 'limit',
+    time_in_force: 'gtc',
+    limit_price: String(limitPrice),
+  };
+  console.log('[SELL ORDER]', JSON.stringify(orderData));
+
   const sellRes = await axios.post(
     `${ALPACA_BASE_URL}/v2/orders`,
-    {
-      symbol,
-      qty: filled.filled_qty,
-      side: 'sell',
-      type: 'limit',
-      time_in_force: 'gtc',
-      limit_price: limitPrice,
-    },
+    orderData,
     { headers }
   );
 
