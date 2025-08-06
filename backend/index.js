@@ -1,18 +1,10 @@
 require('dotenv').config();
 const express = require('express');
-const axios = require('axios');
+const alpaca = require('./alpacaClient');
 const { placeLimitBuyThenSell } = require('./trade');
 
 const app = express();
 app.use(express.json());
-
-const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL;
-
-const headers = {
-  'APCA-API-KEY-ID': process.env.ALPACA_API_KEY,
-  'APCA-API-SECRET-KEY': process.env.ALPACA_SECRET_KEY,
-  'Content-Type': 'application/json',
-};
 
 // Sequentially place a limit buy order followed by a delayed limit sell once filled
 app.post('/trade', async (req, res) => {
@@ -22,25 +14,40 @@ app.post('/trade', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('Trade error:', err?.response?.data || err.message);
-    res.status(500).json({ error: err.message });
+    if (err.response?.status === 403) {
+      res
+        .status(403)
+        .json({
+          error:
+            'Access Denied – check Alpaca API keys and endpoint (paper vs live).',
+        });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
 // Proxy all other Alpaca requests through this backend
 app.use('/alpaca', async (req, res) => {
-  const url = `${ALPACA_BASE_URL}${req.path}`;
+  console.log(`[Alpaca] ${req.method} ${req.path}`);
   try {
-    const response = await axios({
+    const response = await alpaca({
       method: req.method,
-      url,
+      url: req.path,
       params: req.query,
       data: req.body,
-      headers,
     });
     res.status(response.status).json(response.data);
   } catch (err) {
     const status = err.response?.status || 500;
-    res.status(status).json(err.response?.data || { error: err.message });
+    if (status === 403) {
+      res.status(403).json({
+        error:
+          'Access Denied – check Alpaca API keys and endpoint (paper vs live).',
+      });
+    } else {
+      res.status(status).json(err.response?.data || { error: err.message });
+    }
   }
 });
 
