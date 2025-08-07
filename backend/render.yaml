@@ -3,14 +3,14 @@ services:
     name: crypto-backend
     env: python
     plan: free
-    rootDir: backend
-    buildCommand: "./.render-build.sh"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "python app.py"
+    rootDir: backend
     envVars:
       - key: ALPACA_API_KEY
-        value: YOUR_ALPACA_API_KEY
+        value: AKP4CYCLABN0QHC7GVH4
       - key: ALPACA_SECRET_KEY
-        value: YOUR_ALPACA_SECRET_KEY
+        value: PwJAEwLnLnsf7qAVvFutE8VIMgsAgvi7PMkMcCca
       - key: ALPACA_BASE_URL
         value: https://api.alpaca.markets
-    pythonVersion: 3.11
+pythonVersion: 3.11
