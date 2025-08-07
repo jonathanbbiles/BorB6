@@ -1,29 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import axios from 'axios';
+import React from 'react';
+import { View, Button } from 'react-native';
+import { triggerTrade } from '../api';
+import PortfolioOverview from '../components/PortfolioOverview';
 
-export default function HomeScreen() {
-  const [message, setMessage] = useState('');
-
-  const runTrades = async () => {
-    try {
-      const res = await axios.post('https://your-render-url.onrender.com/api/trades/run');
-      setMessage(`Ran strategy: ${res.data.result.length} actions taken.`);
-    } catch (err) {
-      setMessage('Error running strategy');
-    }
-  };
-
+export default function HomeScreen({ navigation }) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Crypto Scalping Bot</Text>
-      <Button title="Run Strategy" onPress={runTrades} />
-      <Text>{message}</Text>
+    <View>
+      <PortfolioOverview />
+      <Button title="Trigger Trade" onPress={triggerTrade} />
+      <Button title="Go to Trades" onPress={() => navigation.navigate('Trades')} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { fontSize: 24, marginBottom: 20 }
-});

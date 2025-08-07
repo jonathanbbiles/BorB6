@@ -1,0 +1,6 @@
+flask
+alpaca-trade-api
+numpy
+pandas
+scipy
+python-dotenv
